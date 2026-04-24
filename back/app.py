@@ -177,7 +177,7 @@ if SHAP_ENABLED and model is not None:
 @app.before_request
 def initialize_db():
     """Initialize MongoDB connection on first API request"""
-    if request.method == "OPTIONS":
+    if request.method == "OPTIONS" or request.path == "/":
         return
         
     global users_collection, chat_collection, prediction_collection
