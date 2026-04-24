@@ -4,8 +4,5 @@ Flask-JWT-Extended
 python-dotenv
 groq
 pymongo
-numpy
-scikit-learn
-joblib
 Werkzeug
 requests

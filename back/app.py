@@ -1,6 +1,4 @@
 from flask import Flask, request, jsonify
-import numpy as np
-import joblib
 from flask_cors import CORS
 import os
 from groq import Groq
@@ -151,17 +149,11 @@ def get_mongo_collections():
 # -----------------------------
 # Load ML Model
 # -----------------------------
-# Get the directory where app.py is located (back folder)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "Model", "best_rf_model.pkl")
-
 try:
-    model = joblib.load(MODEL_PATH)
-    print(f"[SUCCESS] Model Loaded Successfully from {MODEL_PATH}")
+    from Model import compiled_rf as model
+    print(f"[SUCCESS] Model Loaded Successfully as compiled python file")
 except Exception as e:
     print(f"[ERROR] Model Load Error: {e}")
-    print(f"[ERROR] Attempted path: {MODEL_PATH}")
-    print(f"[ERROR] File exists: {os.path.exists(MODEL_PATH)}")
     model = None
 
 if SHAP_ENABLED and model is not None:
@@ -395,11 +387,10 @@ def predict():
         }
 
         features = [float(cleaned_input.get(key, 0.0)) for key in FEATURE_ORDER]
-        final = np.array([features])
-
-        print(f"[PREDICT] Running model prediction for entry {entry_id}...")
-        pred = model.predict(final)[0]
-        prob = model.predict_proba(final)[0][1]
+        final = [features] # For SHAP if someone enables it later, though it would crash without numpy
+        scores = model.score(features)
+        prob = scores[1]
+        pred = 1 if prob >= 0.5 else 0
         print(f"[PREDICT] Result: {pred}, Probability: {prob}")
 
         if prob > 0.6:
