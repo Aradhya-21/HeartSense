@@ -62,9 +62,8 @@ mongo_uri = os.getenv("MONGO_URI")
 app = Flask(__name__)
 
 #  JWT CONFIG (must be set before JWTManager initialization)
-app.config["JWT_SECRET_KEY"] = jwt_secret
-# Accept JWT from cookies and Authorization header so frontend can fallback if browser blocks the cookie
-app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
+app.config["JWT_SECRET_KEY"] = jwt_secret or "temporary_fallback_secret"
+# Accept JWT from cookies and Authorization header so frontend can fallback if browser blocks the cookieapp.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
 # Use HTTPS only in production
 # Render sets RENDER=true automatically
 is_production = os.getenv("ENVIRONMENT", "development") == "production" or os.getenv("RENDER") == "true"
@@ -112,8 +111,11 @@ CORS(
     }}
 )
 
-groq_client = Groq(api_key=groq_api_key)
-
+groq_client = None
+if groq_api_key:
+    groq_client = Groq(api_key=groq_api_key)
+else:
+    print("[WARNING] GROQ_API_KEY is not set. Chat features will not work.")
 # -----------------------------
 # MongoDB Setup (Lazy Loading)
 # Connection deferred until first use to prevent startup crashes
@@ -506,6 +508,9 @@ def chat():
         
         if not message or not message.strip():
             return jsonify({"error": "Message cannot be empty"}), 400
+
+        if groq_client is None:
+            return jsonify({"error": "GROQ_API_KEY is not configured on the server."}), 503
 
         try:
             response = groq_client.chat.completions.create(
