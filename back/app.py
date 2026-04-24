@@ -5,7 +5,7 @@ from flask_cors import CORS
 import os
 from groq import Groq
 from dotenv import load_dotenv
-from flask_bcrypt import Bcrypt
+
 from flask_jwt_extended import (
     JWTManager,
     create_access_token,
@@ -78,8 +78,7 @@ app.config["JWT_COOKIE_SAMESITE"] = "None" if is_production else "Lax"
 # app.config["JWT_COOKIE_DOMAIN"] = "127.0.0.1"
 
 jwt = JWTManager(app)
-bcrypt = Bcrypt(app)
-
+# Replaced Bcrypt with werkzeug.security
 import re
 
 # ✅ CORS Configuration
@@ -230,8 +229,8 @@ def register():
         if existing_user:
             return jsonify({"error": "User already exists"}), 400
 
-        # Hash password
-        hashed_pw = bcrypt.generate_password_hash(password).decode("utf-8")
+        from werkzeug.security import generate_password_hash
+        hashed_pw = generate_password_hash(password)
 
         # Insert user
         result = users_collection.insert_one({
@@ -262,7 +261,8 @@ def login():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    if not bcrypt.check_password_hash(user["password"], password):
+    from werkzeug.security import check_password_hash
+    if not check_password_hash(user["password"], password):
         return jsonify({"error": "Invalid credentials"}), 401
 
     access_token = create_access_token(identity=str(user["_id"]))
@@ -360,8 +360,8 @@ def reset_password():
     if datetime.utcnow() > user["reset_expiry"]:
         return jsonify({"error": "Token expired"}), 400
 
-    # Hash new password
-    hashed_pw = bcrypt.generate_password_hash(new_password).decode("utf-8")
+    from werkzeug.security import generate_password_hash
+    hashed_pw = generate_password_hash(new_password)
 
     # Update password and clear reset token
     users_collection.update_one(
