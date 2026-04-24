@@ -1,8 +1,0 @@
-{
-  "name": "heartsense-root",
-  "private": true,
-  "scripts": {
-    "build": "cd frontend && npm install && npm run build && cd .. && rm -rf public && mv frontend/dist public",
-    "install": "cd frontend && npm install"
-  }
-}
